@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
+import chokidar from "chokidar";
+import treeKill from "tree-kill";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,21 +15,15 @@ let devServer = null;
 
 function copyEnvFile() {
   try {
-    // Read the development environment file
     const envContent = fs.readFileSync(sourceEnvPath, "utf8");
-
-    // Write to the root .env file
     fs.writeFileSync(targetEnvPath, envContent);
+    console.log("✅ DEVELOPMENT environment variables copied successfully");
 
-    console.log("✅ Environment variables copied successfully");
-
-    // Restart the dev server if it's running
     if (devServer) {
-      console.log(
-        "🔄 Restarting development server to apply new environment variables..."
-      );
-      devServer.kill();
-      startDevServer();
+      console.log("🔄 Restarting Vite dev server...");
+      treeKill(devServer.pid, "SIGTERM", () => {
+        startDevServer();
+      });
     }
   } catch (error) {
     console.error("❌ Error copying environment variables:", error.message);
@@ -35,37 +31,30 @@ function copyEnvFile() {
 }
 
 function startDevServer() {
-  console.log("🚀 Starting development server...");
-  // Using npm to start the Vite dev server
-  devServer = spawn("npm", ["run", "dev", "--", "--port", "3000"], {
+  console.log("🚀 Starting Vite dev server...");
+  devServer = spawn("vite", ["--port", "3000"], {
     stdio: "inherit",
     shell: true,
   });
 
   devServer.on("error", (err) => {
-    console.error("❌ Failed to start development server:", err);
+    console.error("❌ Failed to start Vite dev server:", err);
   });
 
   devServer.on("close", (code) => {
     if (code !== 0 && code !== null) {
-      console.log(`⚠️ Development server exited with code ${code}`);
+      console.log(`⚠️ Vite dev server exited with code ${code}`);
     }
     devServer = null;
   });
 }
 
-// Initial copy
+// Initial setup
 copyEnvFile();
-
-// Watch for changes
-fs.watch(sourceEnvPath, (eventType, filename) => {
-  if (eventType === "change") {
-    console.log(`🔄 Detected changes in ${filename}`);
-    copyEnvFile();
-  }
-});
-
-console.log("👀 Watching for changes in .env.development...");
-
-// Start the development server initially
 startDevServer();
+
+// Watch with chokidar for reliable FS events
+chokidar.watch(sourceEnvPath).on("change", () => {
+  console.log("👀 Detected changes in .env.development");
+  copyEnvFile();
+});

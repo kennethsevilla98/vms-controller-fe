@@ -7,7 +7,7 @@
     "setup-env": "node scripts/setup-env.js",
     "setup-env:once": "node scripts/setup-env.js --no-watch",
     "setup-env:prod": "node scripts/setup-env.js --production --no-watch",
-    "dev": "npm run setup-env && vite --port 3000",
+    "dev": "node scripts/setup-env.js",
     "start": "node scripts/dev-with-env-watch.js",
     "build": "npm run setup-env:prod && vite build && tsc",
     "preview": "vite preview",
@@ -25,6 +25,7 @@
     "deploy:dev": "npm run docker:build && npm run docker:up"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/vite": "^4.1.13",
     "class-variance-authority": "^0.7.1",
