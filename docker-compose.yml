@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${PROJECT_NAME:-default-project}:latest
+    ports:
+      - "3001:80"
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
