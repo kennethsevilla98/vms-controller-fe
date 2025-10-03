@@ -1,7 +1,18 @@
 import { DialogContent } from "@radix-ui/react-dialog";
 import { EPSON_LOGO_WHITE, VERIFYI } from "./assets/images";
-import { Dialog } from "./components/ui/dialog";
+import { Dialog, DialogTitle } from "./components/ui/dialog";
 import { useRealTimeClock } from "./hooks/useRealTimeClock";
+import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
+import { getWebSocketUrl } from "./utils/env";
+import { cn } from "./lib/utils";
+
+const socketUrl = getWebSocketUrl();
+type messageType =
+  | "Invalid Expired Card"
+  | "Valid Card"
+  | "User Not Found"
+  | "";
 
 function App() {
   const philippinesTime = useRealTimeClock("Asia/Manila");
@@ -9,6 +20,38 @@ function App() {
   const todate = `${today.toLocaleString("default", {
     month: "long",
   })} ${today.getDate()}, ${today.getFullYear()}`;
+
+  const [message, setMessage] = useState<messageType>("");
+
+  useEffect(() => {
+    const socket = io(socketUrl, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000,
+    });
+
+    const handleConnect = () => {
+      console.log("Connected to server");
+      socket.emit("join", "vms");
+    };
+
+    const handleData = (msg: messageType) => {
+      console.log("Message from server:", msg);
+      setMessage(msg);
+      setTimeout(() => setMessage(""), 5000);
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("data", handleData);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("data", handleData);
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <>
@@ -34,9 +77,18 @@ function App() {
             {philippinesTime}
           </p>
         </div>
-        <Dialog>
-          <DialogContent className="bg-accent p-10 w-2/3 h-1/3 rounded-2xl border-green-700 border-4">
-            <p className="text-4xl font-bold">Welcome to sample</p>
+        <Dialog open={Boolean(message)} modal={true}>
+          <DialogTitle></DialogTitle>
+          <DialogContent
+            className={cn(
+              "p-32 shadow-2xl rounded-2xl border-4 text-center",
+
+              message === "Valid Card"
+                ? "border-green-700 bg-green-100 text-green-700"
+                : "border-red-700 bg-red-100 text-red-700"
+            )}
+          >
+            <p className="text-6xl font-bold">{message}</p>
           </DialogContent>
         </Dialog>
       </div>
