@@ -2,7 +2,7 @@ import { DialogContent } from "@radix-ui/react-dialog";
 import { EPSON_LOGO_WHITE, VERIFYI } from "./assets/images";
 import { Dialog, DialogTitle } from "./components/ui/dialog";
 import { useRealTimeClock } from "./hooks/useRealTimeClock";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { getWebSocketUrl } from "./utils/env";
 import { cn } from "./lib/utils";
@@ -23,6 +23,8 @@ function App() {
 
   const [message, setMessage] = useState<messageType>("");
 
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     const socket = io(socketUrl, {
       transports: ["websocket"],
@@ -40,7 +42,14 @@ function App() {
     const handleData = (msg: messageType) => {
       console.log("Message from server:", msg);
       setMessage(msg);
-      setTimeout(() => setMessage(""), 5000);
+      // 🧹 Clear any existing timeout before starting a new one
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      // ⏰ Set a new timeout to clear message after 5 seconds
+      timeoutRef.current = setTimeout(() => {
+        setMessage("");
+      }, 5000);
     };
 
     socket.on("connect", handleConnect);
