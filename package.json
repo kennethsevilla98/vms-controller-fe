@@ -1,5 +1,5 @@
 {
-  "name": "vite-template-shadcn",
+  "name": "vms-controller-fe",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,8 +9,9 @@
     "setup-env:prod": "node scripts/setup-env.js --production --no-watch",
     "dev": "node scripts/setup-env.js",
     "start": "node scripts/dev-with-env-watch.js",
-    "build": "npm run setup-env:prod && vite build && tsc",
-    "preview": "vite preview",
+    "build": "vite build",
+    "predeploy": "where pm2 >nul 2>nul || npm install -g pm2 && where serve >nul 2>nul || npm install -g serve",
+    "deploy": "npm run predeploy && npm run build && (pm2 delete vms-controller-fe || echo Skipping delete) && pm2 start cmd --name vms-controller-fe -- /c \"npx serve -s dist -l 3000\" && pm2 save",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
